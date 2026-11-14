@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專案冒險（原型）</title>
+<style>
+@font-face{font-family:"Cubic 11";src:url(assets/Cubic_11.woff2) format("woff2");font-display:swap}
+:root{--ink:#131b1b;--muted:#5d6462;--bg:#eef1e6;--card:#fbedea;--line:#d9cfc4;--accent:#f06733;--green:#5f9a3c;--blue:#2f6fd0;--red:#c2413b;--amber:#d98a1f;--soft:#f6e3c6;
+  --w:calc(50vw + 520px);--pad:max(16px,calc((100vw - var(--w))/2 + 16px));--px:"Cubic 11",-apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;font-family:var(--px);border:2px solid var(--ink);background:#fff;border-radius:6px;padding:3px 12px;box-shadow:0 2px 0 var(--ink)}
+button:hover{background:var(--soft)}
+button:active{transform:translateY(2px);box-shadow:none}
+button.hi{background:var(--accent);color:#fff}
+button.hi:hover{background:#d9541f}
+button.sm{padding:1px 9px;font-size:.88rem}
+.hud{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:var(--ink);color:#fbedea;padding:10px var(--pad);font-family:var(--px)}
+.hud .title{font-size:1.25rem;letter-spacing:.05em}
+.hud .title small{opacity:.6;margin-left:6px;font-size:.8rem}
+.hud select{background:#fbedea;color:var(--ink);border-radius:6px;border:0;padding:4px 8px;max-width:260px;font-family:var(--px)}
+.hud .lv{display:flex;align-items:center;gap:8px}
+.hud .bar{width:120px;height:10px;background:#3a4444;border:2px solid #fbedea;overflow:hidden}
+.hud .bar i{display:block;height:100%;width:0;background:#ffad55;transition:width .5s}
+.hud .stat b{font-size:1.1rem;margin-left:4px;color:#ffad55}
+.hud #store{margin-left:auto;font-size:.85rem;opacity:.85}
+.demo{background:var(--soft);color:#8a4b12;padding:6px var(--pad);font-size:.9rem}
+.wrap{max-width:var(--w);margin:0 auto}
+#chips{display:flex;gap:8px;overflow-x:auto;padding:14px 16px 6px}
+#chips button{white-space:nowrap;font-size:.88rem;text-align:left;padding:4px 12px;line-height:1.4;flex:none}
+#chips button small{display:block;color:var(--muted);font-family:-apple-system,"PingFang TC",sans-serif;font-size:.75rem}
+#chips button.doing{background:var(--soft)}
+#chips button.doing small{color:#a3530f}
+#chips button.done{color:var(--muted)}
+#chips button.here{background:#ffd9a8}
+.world{margin:8px 16px 0;border:3px solid var(--ink);border-radius:8px;overflow:hidden;background:#eef1e6;box-shadow:0 4px 0 var(--ink)}
+canvas{display:block;width:100%;height:min(458px,52vh);cursor:pointer;image-rendering:pixelated}
+.hint span:last-child{white-space:nowrap}
+.hint{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 12px;line-height:1.5;border-top:3px solid var(--ink);background:#fbedea;color:var(--muted);font-size:.85rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 16px 60px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.panel{border:15px solid transparent;border-image:url(assets/panel.png) 5 fill / 15px / 0 stretch;image-rendering:pixelated;padding:2px 8px 6px;min-height:240px}
+.panel>*{image-rendering:auto}
+.panel h2{margin:0 0 4px;font:1.25rem/1.4 var(--px)}
+.panel h3{margin:14px 0 4px;font:1rem/1.4 var(--px);color:#8a4b12}
+.panel a{color:var(--blue);font-weight:600}
+.muted{color:var(--muted);font-size:.88rem}
+.acts2{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+button.link{border:0;box-shadow:none;background:none;padding:0 4px;font-size:.8rem;color:#8a4b12;text-decoration:underline;font-family:inherit}
+button.link:hover{background:none;color:var(--accent)}
+.editable{cursor:pointer;border:2px dashed transparent;border-radius:6px;padding:2px 6px;margin-left:-6px}
+.editable:hover{border-color:var(--accent);background:#fff}
+.editable b{color:var(--accent);font-weight:500}
+.chk{width:18px;height:18px;margin:3px 2px 0 0;accent-color:var(--green);cursor:pointer;flex:none}
+.evform{display:grid;gap:8px;margin:8px 0 12px}
+.evform input{width:100%;border:2px solid var(--ink);border-radius:6px;padding:5px 8px;background:#fff}
+.evform .row{display:flex;gap:8px}.evform label{flex:1;font-size:.85rem;color:var(--muted)}
+.evform button{justify-self:start}
+.panel details summary{cursor:pointer;margin-top:8px}
+details.help{background:var(--soft);border:2px solid var(--ink);border-radius:6px;padding:6px 12px;margin-bottom:10px}
+details.help summary{cursor:pointer;font-family:var(--px)}
+details.help ol{margin:6px 0 2px;padding-left:20px}
+.tag{display:inline-block;font:.75rem/1.5 var(--px);border:2px solid var(--ink);border-radius:4px;padding:0 6px;background:#fff;margin-left:6px;vertical-align:middle}
+.tag.red{background:#f6b3ad}.tag.amber{background:#ffd9a8}.tag.grey{background:#e4e0da;color:var(--muted)}.tag.green{background:#c9e2a8}
+ul.list{list-style:none;margin:6px 0;padding:0}
+ul.list li{border-top:2px dotted var(--line);padding:7px 0;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+ul.list li:first-child{border-top:0}
+ul.list li .t{flex:1;min-width:0}
+ul.list li.due{background:var(--soft);margin:0 -6px;padding:7px 6px;border-radius:6px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button.on{background:var(--ink);color:#fbedea}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.kpi div{background:#fff;border:2px solid var(--ink);border-radius:6px;padding:6px 10px;font-size:.85rem}
+.kpi b{display:block;font:1.4rem/1.3 var(--px)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border-bottom:2px dotted var(--line);padding:5px 4px;text-align:left}
+th{color:var(--muted);font-weight:500}
+#modal{position:fixed;inset:0;background:rgba(19,27,27,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+#modal[hidden]{display:none}
+.card-form{border:18px solid transparent;border-image:url(assets/paper.png) 5 fill / 18px / 0 stretch;image-rendering:pixelated;padding:4px 8px;width:min(540px,100%);max-height:92vh;overflow:auto}
+.card-form>*{image-rendering:auto}
+.card-form h2{margin:0 0 2px;font:1.3rem/1.4 var(--px)}
+.card-form label{display:block;margin-top:10px;font-size:.88rem;color:#5a3a12}
+.card-form select,.card-form input[type=text],.card-form input[type=date],.card-form textarea{width:100%;border:2px solid var(--ink);border-radius:6px;padding:6px 8px;background:#fff}
+.card-form textarea{min-height:60px;resize:vertical}
+.card-form .row{display:flex;gap:10px}.card-form .row>*{flex:1}
+.card-form .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.seg{display:flex;gap:6px;margin-top:4px}
+.seg label{flex:1;margin:0;border:2px solid var(--ink);border-radius:6px;padding:6px;text-align:center;color:var(--ink);cursor:pointer;background:#fff;font-family:var(--px)}
+.seg input{display:none}
+.seg label:has(input:checked){background:var(--accent);color:#fff}
+.quote{background:#fff;border:2px solid var(--ink);border-radius:6px;padding:8px 10px;margin-top:8px;font-size:.9rem}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+#toast div{background:var(--ink);color:#ffad55;border:2px solid #ffad55;border-radius:6px;padding:8px 18px;font-family:var(--px);animation:pop 2.8s forwards}
+@keyframes pop{0%{opacity:0;transform:translateY(-8px)}8%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){#toast div{animation-duration:.01s;animation-delay:2.5s}}
+</style>
+</head>
+<body>
+<header class="hud">
+  <div class="title">專案冒險<small>原型</small></div>
+  <select id="proj" aria-label="專案"></select>
+  <div class="lv">Lv <b id="lv">1</b><div class="bar"><i id="xpbar"></i></div><span id="xptxt"></span></div>
+  <div class="stat">命中率<b id="hit">–</b></div>
+  <div class="stat">掌握度<b id="cal">–</b></div>
+  <div class="stat">待揭曉<b id="pend">0</b></div>
+  <div id="store"></div>
+</header>
+<div class="demo" id="demo" hidden></div>
+<div class="wrap">
+<nav id="chips" aria-label="路線圖"></nav>
+<div class="world">
+  <canvas id="cv" aria-label="關卡地圖"></canvas>
+  <div class="hint"><span>用滑鼠點：點東西會走到它旁邊並顯示內容，點空地就走過去。　<b>文件</b>：綠勾已確認／橘點進行中／灰色還缺　<b>白板</b>待辦（可打勾）　<b>警告牌</b>事件簿　<b>玻璃門</b>過關目標</span><span><button class="sm" id="goL">◀</button> <button class="sm" id="goR">▶</button></span></div>
+</div>
+<div class="cols">
+  <section class="panel" id="near" aria-live="polite"></section>
+  <section class="panel">
+    <div class="tabs"><button data-tab="turn">待對答案</button><button data-tab="deck">打法統計</button><button data-tab="stats">戰績</button></div>
+    <div id="side"></div>
+  </section>
+</div>
+</div>
+<div id="modal" hidden></div>
+<div id="toast"></div>
+
+<script>
+// 專案冒險（原型）：從側面看的橫向關卡。每個階段是一個房間，背景依階段類型不同；
+// 房間裡由左到右是：階段立牌 → 文件（台座上漂浮的紙）→ 任務板 → 事件牌 → 要打交道的人 → 過關目標的門。
+// work.json 只讀不寫；這裡自己的資料存在同一個資料夾的 game.json（與瀏覽器 localStorage）。
+// 美術：Ninja Adventure Asset Pack（Pixel-Boy & AAA，CC0）；字型：Cubic 11（OFL）。見 assets/CREDITS.md。
+
+const SELFTEST = location.search.includes('selftest');
+const LS_KEY = SELFTEST ? 'pm-game-selftest' : 'pm-game-v1';
+const ACTIONS = ['寄信說明並給期限', '打電話或當面講', '約一場會議', '副本給對方主管', '往上報給我方主管', '先做，事後補確認', '等待，先不動作'];
+const SIDE = { internal: { label: '我方', img: 'team' }, client: { label: '客戶', img: 'client' }, vendor: { label: '供應商', img: 'vendor' } };
+const DOC_STATUS = { confirmed: '已確認', review: '送審中', draft: '草稿', todo: '尚未開始', none: '尚未開始', na: '不適用' };
+const STAGE_STATUS = { done: '已過關', doing: '進行中', todo: '還沒到' };
+const WEEK = '日一二三四五六';
+
+const pad = n => String(n).padStart(2, '0');
+const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => fmt(new Date());
+const toDate = s => new Date(s + 'T00:00:00');
+const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return fmt(d); };
+const dayDiff = (a, b) => Math.round((toDate(a) - toDate(b)) / 86400000);
+const isDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+const md = s => s ? s.slice(5).replace('-', '/') : '';
+const mdw = s => `${md(s)}（${WEEK[toDate(s).getDay()]}）`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ---------- 示範資料（全部虛構） ----------
+const D0 = today(), dd = n => addDays(D0, n);
+const DEMO = { projects: [{
+  id: 'demo', name: '示範：診所預約系統（虛構）', stageIndex: 2,
+  people: [{ id: 'me', name: '我方團隊', side: 'internal' }, { id: 'cl', name: '診所窗口', side: 'client' }, { id: 'vd', name: '開發夥伴', side: 'vendor' }],
+  milestones: [{ id: 'm1', name: '合約簽回', date: dd(-31), done: true }, { id: 'm2', name: '功能清單確認', date: dd(-17), done: true }, { id: 'm3', name: '設計定稿', date: dd(6), done: false }, { id: 'm4', name: '正式上線', date: dd(40), done: false }],
+  stages: [
+    { id: 's1', name: '啟動', status: 'done', enteredOn: dd(-40), doneOn: dd(-31), exit: '合約簽回、Kick off 完成', gate: { docs: true }, docs: [{ id: 'd1', name: '合約', status: 'confirmed', owner: 'me', confirmedOn: dd(-33) }, { id: 'd2', name: 'Kick off 簡報', status: 'confirmed', owner: 'me', confirmedOn: dd(-31) }], checklist: [{ id: 'c1', text: '確認雙方窗口', done: true, due: dd(-36) }] },
+    { id: 's2', name: '需求訪談', status: 'done', enteredOn: dd(-30), doneOn: dd(-17), exit: '功能清單雙方確認', gate: { docs: true }, docs: [{ id: 'd3', name: '功能清單', status: 'confirmed', owner: 'me', confirmedOn: dd(-17) }, { id: 'd4', name: '訪談紀錄', status: 'confirmed', owner: 'me', confirmedOn: dd(-22) }], checklist: [{ id: 'c2', text: '三場訪談完成', done: true, due: dd(-21) }] },
+    { id: 's3', name: '設計', status: 'doing', enteredOn: dd(-16), exit: '設計稿經客戶書面確認', gate: { docs: true, checklist: true }, docs: [{ id: 'd5', name: 'Wireframe', status: 'confirmed', owner: 'me', confirmedOn: dd(-8), url: 'https://example.com/wireframe' }, { id: 'd6', name: 'UI 精稿', status: 'review', owner: 'me' }, { id: 'd7', name: '設計確認信', status: 'todo', owner: 'cl' }], checklist: [{ id: 'c3', text: '第一輪設計回饋收齊', done: true, due: dd(-5) }, { id: 'c4', text: '第二輪修改完成', done: false, due: dd(2) }] },
+    { id: 's4', name: '開發', status: 'todo', exit: '功能完成並通過內部測試', gate: { docs: true }, docs: [{ id: 'd8', name: 'API 文件', status: 'todo', owner: 'vd' }, { id: 'd9', name: '測試案例', status: 'todo', owner: 'me' }], checklist: [{ id: 'c5', text: '測試環境建好', done: false, due: dd(12) }] },
+    { id: 's5', name: '驗收上線', status: 'todo', exit: '客戶簽驗收單', gate: { docs: true }, docs: [{ id: 'd10', name: '驗收單', status: 'todo', owner: 'cl' }], checklist: [{ id: 'c6', text: '正式環境部署', done: false, due: dd(38) }] },
+  ],
+  tasks: [
+    { id: 't1', name: '回覆 UI 精稿第二輪意見', assignee: 'cl', stage: 's3', status: 'todo', due: dd(-1), dueNote: '原訂昨天' },
+    { id: 't2', name: '提供診所 Logo 向量檔', assignee: 'cl', stage: 's3', status: 'todo', due: dd(3), dueNote: '' },
+    { id: 't3', name: '依回饋修改掛號頁', assignee: 'me', stage: 's3', status: 'doing', due: dd(2), dueNote: '等客戶意見' },
+    { id: 't4', name: '確認開發人力起始日', assignee: 'vd', stage: 's3', status: 'todo', due: dd(4), dueNote: '' },
+    { id: 't5', name: '提供簡訊服務帳號', assignee: 'cl', stage: 's4', status: 'todo', due: '', dueNote: '開發前' },
+    { id: 't6', name: '簽回設計確認', assignee: 'cl', stage: 's2', status: 'done', due: dd(-18), dueNote: '' },
+    { id: 't7', name: '提供測試機與測試帳號', assignee: 'vd', stage: 's4', status: 'todo', due: dd(14), dueNote: '' },
+  ],
+}] };
+
+// ---------- 狀態 ----------
+let work = window.__WORK || DEMO, isDemo = !window.__WORK, dir = null, workModified = 0;
+let game = loadLocal();
+let editStage = '';
+let pid = null, tab = 'turn', objs = [], spans = [], nearId = null, pin = null, hoverId = null;
+const ROOM_W = 1290; let H = 420, GROUND = 324;
+const player = { x: 0, tx: null, sp: 560, dir: 3, moving: false };
+const keys = {};
+
+function emptyGame() { return { version: 1, xp: 0, cards: [], events: [], logs: [], deck: [], updatedAt: '' }; }
+function loadLocal() { try { return Object.assign(emptyGame(), JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) { return emptyGame(); } }
+let saveTimer = null;
+function saveGame() {
+  game.updatedAt = new Date().toISOString();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(game)); } catch (e) {}
+  if (!dir || SELFTEST) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try { const fh = await dir.getFileHandle('game.json', { create: true }); const w = await fh.createWritable(); await w.write(JSON.stringify(game, null, 2)); await w.close(); }
+    catch (e) { toast('game.json 寫入失敗：' + e.message); }
+  }, 300);
+}
+
+const proj = () => work.projects.find(p => p.id === pid) || work.projects[0];
+const person = id => proj().people.find(x => x.id === id);
+const stageOf = id => proj().stages.find(s => s.id === id);
+function tasksIn(stage) {
+  const p = proj(), ids = new Set(p.stages.map(s => s.id));
+  const main = p.stages[Math.min(p.stageIndex ?? 0, p.stages.length - 1)];
+  return p.tasks.filter(t => t.stage === stage.id || (!ids.has(t.stage) && main && main.id === stage.id));
+}
+const undone = t => t.status !== 'done';
+const overdue = t => undone(t) && t.due && t.due <= today();
+const sideOf = t => person(t.assignee)?.side || 'internal';
+const linkOf = d => /^https?:\/\//i.test(d?.url || '') ? d.url : '';
+const myCards = () => game.cards.filter(c => c.pid === pid);
+const pending = () => myCards().filter(c => !c.result).sort((a, b) => a.revealOn.localeCompare(b.revealOn));
+const outcome = c => ({ hit: 1, half: .5, miss: 0 }[c.result]);
+const calib = c => 1 - Math.pow(c.conf / 100 - outcome(c), 2);
+function gateInfo(s) {
+  const docs = (s.docs || []).filter(d => d.status !== 'na'), cl = s.checklist || [], g = s.gate || {};
+  return { docs, cl, needDocs: !!g.docs, needCl: !!g.checklist, dOk: docs.filter(d => d.status === 'confirmed').length, cOk: cl.filter(c => c.done).length };
+}
+function waitParts(s) {
+  const ts = tasksIn(s).filter(undone), g = gateInfo(s), parts = [];
+  ['client', 'vendor', 'internal'].forEach(k => { const n = ts.filter(t => sideOf(t) === k).length; if (n) parts.push(`${SIDE[k].label} ${n}`); });
+  if (g.docs.length - g.dOk) parts.push(`文件 ${g.docs.length - g.dOk}`);
+  return parts;
+}
+
+// ---------- 每個階段的起訖日（只用來顯示，不決定位置） ----------
+// 有日期就用日期；沒有的話接在前一段後面，至少七天。
+function computeSpans(p) {
+  const td = today();
+  const raw = p.stages.map(s => {
+    const ts = tasksIn(s);
+    const ks = [s.enteredOn, s.doneOn, ...ts.flatMap(t => [t.dueStart, t.due]), ...(s.checklist || []).map(c => c.due), ...(s.docs || []).map(d => d.confirmedOn), ...(s.sprints || []).flatMap(x => [x.start, x.end])].filter(isDate).sort();
+    let a = isDate(s.enteredOn) ? s.enteredOn : '', b = isDate(s.doneOn) ? s.doneOn : '';
+    if (s.status === 'done') { if (!a && ks.length) a = ks[0]; if (!b && ks.length) b = ks[ks.length - 1] > td ? td : ks[ks.length - 1]; }
+    else if (s.status === 'doing') { if (!a) a = ks[0] && ks[0] < td ? ks[0] : td; if (!b) b = ks.length && ks[ks.length - 1] > addDays(td, 7) ? ks[ks.length - 1] : addDays(td, 7); }
+    else { if (!a && ks.length) a = ks[0] > td ? ks[0] : addDays(td, 1); if (!b && ks.length) b = ks[ks.length - 1]; }
+    return { s, a, b };
+  });
+  const first = raw.findIndex(r => r.a);
+  const anchor = first < 0 ? addDays(td, -7 * raw.length) : raw[first].a;
+  if (first !== 0) { let end = addDays(anchor, -1); for (let i = (first < 0 ? raw.length : first) - 1; i >= 0; i--) { raw[i].b = end; raw[i].a = addDays(end, -6); end = addDays(raw[i].a, -1); } }
+  let cursor = anchor;
+  raw.forEach((r, i) => {
+    if (!r.a) r.a = r.s.status === 'todo' && cursor <= td ? addDays(td, 1) : cursor;
+    if (!r.b || r.b < r.a) r.b = addDays(r.a, 13);
+    if (dayDiff(r.b, r.a) < 6) r.b = addDays(r.a, 6);
+    if (r.b >= cursor) cursor = addDays(r.b, 1);
+    r.i = i;
+  });
+  return raw;
+}
+
+// ---------- 把專案變成關卡 ----------
+function buildWorld() {
+  const p = proj(); spans = computeSpans(p); objs = [];
+  spans.forEach((r, i) => {
+    const s = r.s, x0 = i * ROOM_W, ts = tasksIn(s);
+    const add = (type, dx, ref, label, k = 0) => objs.push({ id: `${type}:${s.id}:${ref?.id || ''}`, type, x: x0 + dx, stage: s, span: r, ref, label, k });
+    add('sign', 90, null, s.name);
+    const docs = (s.docs || []).filter(d => d.status !== 'na'), gap = docs.length > 1 ? Math.min(104, 440 / (docs.length - 1)) : 0;
+    docs.forEach((d, k) => add('doc', 230 + k * gap, d, d.name, k));
+    add('board', 770, null, '任務板');
+    add('event', 868, null, '事件簿');
+    p.people.filter(pp => ts.some(t => t.assignee === pp.id)).slice(0, 3).forEach((pp, k) => add('npc', 956 + k * 92, pp, pp.name, k));
+    add('gate', ROOM_W - 62, null, '過關目標');
+  });
+}
+const worldW = () => spans.length * ROOM_W;
+const spanOf = s => spans.find(r => r.s.id === s.id);
+const undated = s => tasksIn(s).filter(t => undone(t) && !isDate(t.due));
+const roomAt = () => spans[clamp(Math.floor(player.x / ROOM_W), 0, spans.length - 1)];
+const nearSpan = roomAt;
+
+// ---------- 圖片 ----------
+const IMG = {}; let imgReady = false, ART = false;
+// 正式美術（請 AI 產的圖，去背切格後放在 assets/）。少任何一張就退回程式畫的臨時圖。
+const ART_PNG = ['npc-client', 'npc-client-boss', 'npc-vendor', 'npc-vendor-pm', 'npc-designer', 'npc-teammate', 'items-docs', 'items-props', 'cards'];
+const BG = {   // floor：地板線在圖片高度的幾成；top／bottom：圖不夠高時往上、往下補的顏色
+  office: { floor: .7058, top: '#c5daf0', bottom: '#c0c9df' }, meeting: { floor: .75, top: '#d5b4a5', bottom: '#d6b5a5' }, design: { floor: .6961, top: '#f4bac3', bottom: '#e9bdbd' },
+  dev: { floor: .7224, top: '#c0b5c0', bottom: '#b9aebb' }, test: { floor: .7486, top: '#b7a4d4', bottom: '#b5a1ca' }, launch: { floor: .725, top: '#5f6586', bottom: '#c0b8cc' }, close: { floor: .6892, top: '#c7aca6', bottom: '#bc9c9b' } };
+const NPC_SHEET = { client: ['npc-client', 'npc-client-boss'], vendor: ['npc-vendor', 'npc-vendor-pm'], internal: ['npc-teammate', 'npc-designer'] };
+const npcSheet = pp => { const side = NPC_SHEET[pp.side] ? pp.side : 'internal', same = proj().people.filter(x => x.side === pp.side); return NPC_SHEET[side][Math.max(0, same.indexOf(pp)) % 2]; };
+// 文件名稱對應到哪一格圖示：合約、規格書、報價單、會議紀錄、Wireframe、UI 稿、測試報告、驗收單、發票、簡報
+const DOC_ICON = [[/合約|契約|nda/i, 0], [/報價|估價/i, 2], [/驗收/i, 7], [/發票|請款|收據/i, 8], [/簡報|kick|提案/i, 9], [/測試|test|sit|uat|弱掃|壓測|bug/i, 6], [/wireframe|ux|流程|sitemap/i, 4], [/ui|精稿|設計|prototype|視覺/i, 5], [/會議|訪談|紀錄|記錄/i, 3], [/sow|規格|功能清單|srs|sad|api|文件|手冊|說明書/i, 1]];
+const docIcon = d => (DOC_ICON.find(([re]) => re.test(d.name)) || [0, 3])[1];
+// 畫圖片表裡的第 i 格：x 置中、底邊在 y、高度 h
+function cell(name, i, n, x, y, h, filter) {
+  const im = IMG[name], fw = im.width / n, w = h * fw / im.height;
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; if (filter) ctx.filter = filter;
+  ctx.drawImage(im, i * fw, 0, fw, im.height, Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h)); ctx.restore(); ctx.imageSmoothingEnabled = false;
+}
+function loadImages() {
+  const names = ['hero', 'team', 'client', 'vendor', 'shadow', 'me-walk', ...ART_PNG, ...Object.keys(BG).map(k => 'bg-' + k + '.jpg')];
+  return Promise.all(names.map(n => new Promise(res => { const im = new Image(); im.onload = im.onerror = () => res(); im.src = 'assets/' + (n.includes('.') ? n : n + '.png'); IMG[n.replace(/\.\w+$/, '')] = im; })))
+    .then(() => { imgReady = true; ART = ART_PNG.every(n => IMG[n].width > 0); });
+}
+const cv = $('cv'), ctx = cv.getContext('2d');
+let cw = 800;
+function resize() { const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; cw = Math.round(r.width) || 800; H = Math.round(r.height) || 420; GROUND = H - 116; cv.width = cw * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; }
+const cam = () => worldW() <= cw ? (worldW() - cw) / 2 : clamp(player.x - cw / 2, 0, worldW() - cw);
+const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+const box = (x, y, w, h, fill, bw = 3) => { px(x, y, w, h, OUT); px(x + bw, y + bw, w - bw * 2, h - bw * 2, fill); };
+const OUT = '#131b1b';
+const short = (s, n = 5) => s.length > n ? s.slice(0, n) + '…' : s;
+function text(s, x, y, o = {}) {
+  const size = o.size || 12; ctx.font = `${size}px "Cubic 11", "PingFang TC", sans-serif`; ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'alphabetic';
+  if (o.plate) { const w = Math.ceil(ctx.measureText(s).width) + 14, h = size + 10, lx = o.align === 'left' ? x - 7 : x - w / 2; box(lx - 3, y - h + 1, w + 6, h + 6, o.plate); }
+  ctx.fillStyle = o.color || OUT; ctx.fillText(s, Math.round(x), Math.round(y));
+}
+function sprite(name, x, y, col, frame, z = 5, alpha = 1) {      // x,y 是腳的位置
+  const w = 16 * z; ctx.globalAlpha = alpha * .3; ctx.drawImage(IMG.shadow, Math.round(x - w * .36), Math.round(y - w * .12), Math.round(w * .72), Math.round(w * .26));
+  ctx.globalAlpha = alpha; ctx.drawImage(IMG[name], col * 16, frame * 16, 16, 16, Math.round(x - w / 2), Math.round(y - w * .95), w, w); ctx.globalAlpha = 1;
+}
+function badge(x, y, s, bg, r = 11) { px(x - r, y - r, r * 2, r * 2, OUT); px(x - r + 3, y - r + 3, r * 2 - 6, r * 2 - 6, bg); text(s, x, y + 5, { color: '#fff', size: 13 }); }
+
+// 每種階段一個背景：顏色不同，牆上掛的東西不同。圖案刻意畫得很淡，不搶前面的東西。
+const THEMES = [[/啟動|規劃|合約|kick|初步|報價|立案/i, 'office'], [/需求|訪談|分析|盤點/i, 'meeting'], [/ux|ui|設計|wireframe|視覺/i, 'design'], [/開發|工程|phase|實作|sprint|建置/i, 'dev'], [/測試|sit|uat|弱掃|壓測|封測|trial|修復/i, 'test'], [/上線|部署|發布|上架|送審/i, 'launch'], [/驗收|結案|保固|交付/i, 'close']];
+const PAL = { office: ['#e8eef6', '#cbd8e8', '#b4c5db'], meeting: ['#f4f0e4', '#e3dac3', '#cdc2a3'], design: ['#f8eaef', '#edcfda', '#dfb4c3'], dev: ['#e5f1ea', '#c8dfd0', '#a8c9b4'], test: ['#efebf7', '#d9d1ed', '#bfb3de'], launch: ['#e3f1f8', '#c4e0ef', '#a2cbe1'], close: ['#f9f1da', '#efe0b0', '#e1ca80'], town: ['#eef1e6', '#dde3cc', '#c6cfae'] };
+const THEME_NAME = { office: '辦公室', meeting: '會議室', design: '設計工作室', dev: '開發機房', test: '測試實驗室', launch: '發射場', close: '頒獎台', town: '小鎮' };
+const themeOf = s => (THEMES.find(([re]) => re.test(s.name)) || [0, 'town'])[1];
+const MOTIF = {
+  office(x, y, a, b) { for (let i = 0; i < 2; i++) { const wx = x + i * 110; px(wx, y, 90, 110, b); px(wx + 6, y + 6, 36, 46, a); px(wx + 48, y + 6, 36, 46, a); px(wx + 6, y + 58, 36, 46, a); px(wx + 48, y + 58, 36, 46, a); } px(x + 236, y + 70, 26, 40, b); px(x + 228, y + 40, 42, 34, a); },
+  meeting(x, y, a, b) { px(x, y, 240, 110, b); px(x + 8, y + 8, 224, 94, '#fbf8f0'); for (let i = 0; i < 6; i++) px(x + 22 + (i % 3) * 70, y + 20 + Math.floor(i / 3) * 40, 44, 28, i % 2 ? a : b); },
+  design(x, y, a, b) { for (let i = 0; i < 2; i++) { const ex = x + i * 130; px(ex + 10, y, 90, 80, b); px(ex + 18, y + 8, 74, 64, '#fbf8f0'); px(ex + 26, y + 16, 26, 22, a); px(ex + 58, y + 30, 26, 30, b); px(ex + 28, y + 80, 6, 34, b); px(ex + 76, y + 80, 6, 34, b); } },
+  dev(x, y, a, b) { for (let i = 0; i < 2; i++) { const mx = x + i * 124; px(mx, y + 10, 104, 72, b); px(mx + 8, y + 18, 88, 56, '#f4faf6'); for (let k = 0; k < 4; k++) px(mx + 16, y + 26 + k * 11, 30 + (k * 17) % 40, 5, a); px(mx + 42, y + 82, 20, 16, b); px(mx + 26, y + 98, 52, 8, b); } },
+  test(x, y, a, b) { for (let i = 0; i < 3; i++) { const cx = x + i * 86; px(cx, y, 66, 100, b); px(cx + 6, y + 12, 54, 82, '#faf8fd'); px(cx + 20, y - 6, 26, 12, a); for (let k = 0; k < 4; k++) { px(cx + 12, y + 24 + k * 17, 9, 9, a); px(cx + 26, y + 26 + k * 17, 26, 5, b); } } },
+  launch(x, y, a, b) { px(x + 20, y + 60, 90, 26, a); px(x, y + 72, 60, 20, a); px(x + 190, y + 30, 80, 22, a); px(x + 136, y + 10, 34, 80, b); px(x + 144, y - 8, 18, 18, b); px(x + 122, y + 66, 14, 30, a); px(x + 170, y + 66, 14, 30, a); px(x + 146, y + 30, 14, 14, '#f4fafd'); },
+  close(x, y, a, b) { for (let i = 0; i < 6; i++) px(x + i * 46, y, 30, 22 + (i % 2) * 8, i % 2 ? a : b); px(x + 96, y + 46, 70, 44, b); px(x + 106, y + 54, 50, 28, a); px(x + 122, y + 90, 18, 18, b); px(x + 104, y + 106, 54, 10, b); },
+  town(x, y, a, b) { px(x, y + 70, 110, 44, a); px(x + 20, y + 44, 70, 30, b); px(x + 150, y + 54, 90, 60, a); px(x + 168, y + 26, 54, 30, b); },
+};
+
+function draw(t) {
+  ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, cw, H);
+  const c = cam(), G = GROUND;
+  spans.forEach(r => {
+    const x = r.i * ROOM_W - c; if (x > cw || x + ROOM_W < 0) return;
+    const th = themeOf(r.s), [wall, mo, floor] = PAL[th], st = r.s.status;
+    const bg = BG[th] || BG.office, bim = IMG['bg-' + (BG[th] ? th : 'office')];
+    if (bim && bim.width) {
+      const bh = bim.height * ROOM_W / bim.width, by = Math.round(G - bg.floor * bh);
+      px(x, 0, ROOM_W, Math.max(0, by), bg.top); px(x, by + bh - 2, ROOM_W, Math.max(0, H - by - bh + 2), bg.bottom);
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(bim, Math.round(x), by, ROOM_W, Math.round(bh)); ctx.imageSmoothingEnabled = false;
+      px(x, 0, ROOM_W, H, 'rgba(255,255,255,.2)');
+    } else { px(x, 0, ROOM_W, G, wall); px(x, G, ROOM_W, H - G, floor); px(x, G, ROOM_W, 6, OUT); const my = Math.max(84, G - 250); [300, 700].forEach(mx => MOTIF[th](x + mx, my, mo, floor)); }
+    px(x, 0, 4, G, 'rgba(19,27,27,.18)');
+    text(`${r.i + 1}. ${r.s.name}`, x + 30, 46, { align: 'left', size: 22, plate: st === 'doing' ? '#ffd9a8' : st === 'done' ? '#c9e2a8' : '#eeeae4' });
+    text(`${md(r.a)}～${md(r.b)}　${STAGE_STATUS[st] || st}　${THEME_NAME[th]}`, x + 30, 74, { align: 'left', size: 12, color: '#5d6462' });
+  });
+  objs.forEach(o => { const x = o.x - c; if (x < -120 || x > cw + 120) return; (ART ? DRAW_ART : DRAW)[o.type](o, x, G, t); });
+  spans.forEach(r => { if (r.s.status === 'todo') px(r.i * ROOM_W - c, 0, ROOM_W, H, 'rgba(255,255,255,.42)'); });
+  drawPlayer(player.x - c, G + 42, t);
+  objs.forEach(o => { const x = o.x - c; if (x < -120 || x > cw + 120 || o.type === 'sign' || o.type === 'gate') return; text(short(o.label, 6), x, G + 66 + (o.k % 2 ? 20 : 0), { size: 12, plate: ART ? '#fff' : null }); });
+  [nearId, hoverId].filter((v, i, a) => v && a.indexOf(v) === i).forEach(id => { const o = objs.find(q => q.id === id); if (!o) return; const x = o.x - c, top = (ART ? { doc: 150, npc: 160, board: 150, event: 124, gate: 178, sign: 140 } : { doc: 128, npc: 118, board: 132, event: 100, gate: 160, sign: 110 })[o.type], y = G - top + Math.sin(t / 220) * 2;
+    text(o.label, clamp(x, 70, cw - 70), y, { plate: '#fff', size: 13 }); px(x - 5, y + 9, 10, 5, OUT); px(x - 2, y + 14, 4, 4, OUT); });
+}
+const DRAW = {
+  sign(o, x, G) { const st = o.stage.status; px(x - 4, G - 60, 8, 60, OUT); box(x - 30, G - 96, 60, 42, st === 'doing' ? '#ffad55' : st === 'done' ? '#c9e2a8' : '#e4e0da'); text(st === 'done' ? '✓' : String(o.span.i + 1), x, G - 66, { size: 22 }); },
+  doc(o, x, G, t) { const s = o.ref.status, ok = s === 'confirmed', mid = s === 'review' || s === 'draft', y = G - 96 + Math.sin(t / 420 + o.x) * 4;
+    box(x - 26, G - 22, 52, 22, '#d9cfc4'); px(x - 20, G - 28, 40, 6, OUT);
+    ctx.globalAlpha = ok || mid ? 1 : .75; box(x - 18, y, 36, 46, ok ? '#5f9a3c' : mid ? '#ffd9a8' : '#fff'); ctx.globalAlpha = 1;
+    [12, 21, 30].forEach(d => px(x - 10, y + d, 20, 4, ok ? '#fff' : mid ? '#d98a1f' : '#b9b3aa'));
+    if (ok) badge(x + 16, y + 44, '✓', '#2f5d17', 10); if (linkOf(o.ref)) badge(x + 16, y + 2, '↗', '#2f6fd0', 10); },
+  board(o, x, G) { const n = tasksIn(o.stage).filter(undone).length + (o.stage.checklist || []).filter(c => !c.done).length;
+    px(x - 4, G - 44, 8, 44, OUT); box(x - 38, G - 110, 76, 68, '#fff'); text(n ? String(n) : '✓', x, G - 72, { size: 22, color: n ? OUT : '#5f9a3c' }); text(n ? '件待辦' : '全完成', x, G - 52, { size: 12, color: '#5d6462' }); },
+  event(o, x, G) { const evs = game.events.filter(e => e.pid === pid && e.stageId === o.stage.id), open = evs.filter(e => !e.happenedOn).length;
+    px(x - 3, G - 22, 6, 22, OUT); ctx.fillStyle = OUT; ctx.beginPath(); ctx.moveTo(x, G - 84); ctx.lineTo(x + 34, G - 20); ctx.lineTo(x - 34, G - 20); ctx.fill();
+    ctx.fillStyle = '#ffd9a8'; ctx.beginPath(); ctx.moveTo(x, G - 74); ctx.lineTo(x + 26, G - 25); ctx.lineTo(x - 26, G - 25); ctx.fill(); text(evs.length ? String(open) : '?', x, G - 34, { size: 22 }); },
+  npc(o, x, G) { const ts = tasksIn(o.stage).filter(k => k.assignee === o.ref.id), late = ts.some(overdue), wait = ts.some(undone);
+    sprite((SIDE[o.ref.side] || SIDE.internal).img, x, G, 0, 0); badge(x + 26, G - 78, late ? '!' : wait ? String(ts.filter(undone).length) : '✓', late ? '#c2413b' : wait ? '#d98a1f' : '#5f9a3c');
+    const n = pending().filter(cd => cd.stageId === o.stage.id && cd.personId === o.ref.id).length; if (n) { box(x - 38, G - 92, 20, 26, '#fff'); text(String(n), x - 28, G - 73, { size: 12 }); } },
+  gate(o, x, G) { const done = o.stage.status === 'done', g = gateInfo(o.stage), ok = (!g.needDocs || g.dOk === g.docs.length) && (!g.needCl || g.cOk === g.cl.length);
+    box(x - 26, G - 130, 12, 130, '#f06733'); box(x + 14, G - 130, 12, 130, '#f06733'); box(x - 36, G - 146, 72, 20, '#f06733'); box(x - 30, G - 112, 60, 12, '#ffad55');
+    badge(x, G - 66, done ? '✓' : ok ? '!' : '×', done ? '#5f9a3c' : ok ? '#d98a1f' : '#6f7f7f', 14); },
+};
+// 主角沿用之前舒壓小遊戲的角色（側面走路四格，往左走時左右翻轉）；圖讀不到時退回點陣小人
+// 正式美術版的畫法
+const DRAW_ART = {
+  sign(o, x, G) { const st = o.stage.status; cell('items-props', 3, 8, x, G + 2, 118); text(st === 'done' ? '✓' : String(o.span.i + 1), x, G - 72, { size: 22 }); },
+  doc(o, x, G, t) { const s = o.ref.status, ok = s === 'confirmed', mid = s === 'review' || s === 'draft', y = G - 62 + Math.sin(t / 420 + o.x) * 4;
+    cell('items-props', 0, 8, x, G + 2, 64); cell('items-docs', docIcon(o.ref), 10, x, y, 66, ok || mid ? null : 'grayscale(1) opacity(.5)');
+    if (ok) badge(x + 24, y - 6, '✓', '#2f5d17', 10); else if (mid) badge(x + 24, y - 6, '…', '#d98a1f', 10); if (linkOf(o.ref)) badge(x + 24, y - 58, '↗', '#2f6fd0', 10); },
+  board(o, x, G) { const n = tasksIn(o.stage).filter(undone).length + (o.stage.checklist || []).filter(c => !c.done).length; cell('items-props', 1, 8, x, G + 2, 126); badge(x + 40, G - 118, n ? String(n) : '✓', n ? '#d98a1f' : '#5f9a3c', 14); },
+  event(o, x, G) { const evs = game.events.filter(e => e.pid === pid && e.stageId === o.stage.id); cell('items-props', 2, 8, x, G + 2, 104); if (evs.length) badge(x + 30, G - 96, String(evs.length), '#c2413b', 12); },
+  npc(o, x, G) { const ts = tasksIn(o.stage).filter(k => k.assignee === o.ref.id), late = ts.some(overdue), wait = ts.some(undone), sel = o.id === nearId;
+    const cards = pending().filter(cd => cd.stageId === o.stage.id && cd.personId === o.ref.id), pose = sel ? 2 : late ? 3 : wait ? 1 : 0;
+    ctx.globalAlpha = .28; ctx.drawImage(IMG.shadow, Math.round(x - 34), Math.round(G - 10), 68, 20); ctx.globalAlpha = 1;
+    cell(npcSheet(o.ref), pose, 4, x, G + 4, 132); badge(x + 34, G - 122, late ? '!' : wait ? String(ts.filter(undone).length) : '✓', late ? '#c2413b' : wait ? '#d98a1f' : '#5f9a3c', 12);
+    if (cards.length) { cell('cards', 0, 5, x - 40, G - 100, 40); badge(x - 30, G - 102, String(cards.length), cards.some(cd => cd.revealOn <= today()) ? '#c2413b' : '#2f6fd0', 9); } },
+  gate(o, x, G) { const done = o.stage.status === 'done', g = gateInfo(o.stage), ok = (!g.needDocs || g.dOk === g.docs.length) && (!g.needCl || g.cOk === g.cl.length);
+    cell('items-props', done ? 7 : 6, 8, x, G + 2, 168); badge(x + 34, G - 160, done ? '✓' : ok ? '!' : '×', done ? '#5f9a3c' : ok ? '#d98a1f' : '#6f7f7f', 14); },
+};
+function drawPlayer(x, G, t) {
+  const im = IMG['me-walk'];
+  if (!im || !im.width) { sprite('hero', x, G, player.dir, player.moving ? Math.floor(t / 110) % 4 : 0); return text('我', x, G - 86, { plate: '#ffad55', size: 12 }); }
+  const fw = im.width / 4, fh = im.height, h = 130, w = h * fw / fh, f = player.moving ? Math.floor(t / 150) % 4 : 0;
+  ctx.globalAlpha = .3; ctx.drawImage(IMG.shadow, Math.round(x - 30), Math.round(G - 10), 60, 20); ctx.globalAlpha = 1;
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.translate(Math.round(x), 0); if (player.dir === 2) ctx.scale(-1, 1);
+  ctx.drawImage(im, f * fw, 0, fw, fh, -w / 2, G - h + 4, w, h); ctx.restore(); ctx.imageSmoothingEnabled = false;
+}
+
+let last = 0;
+function loop(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  let v = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), sp = 560;
+  if (v) { player.tx = null; pin = null; }
+  else if (player.tx != null) { const d = player.tx - player.x; sp = player.sp; if (Math.abs(d) < sp * dt + 1) { player.x = player.tx; player.tx = null; if (player.face != null) player.dir = player.face < player.x ? 2 : 3; } else v = Math.sign(d); }
+  player.moving = !!v;
+  if (v) { player.dir = v < 0 ? 2 : 3; player.x = clamp(player.x + v * sp * dt, 20, worldW() - 20); }
+  let best = null, bd = 44;
+  objs.forEach(o => { const d = Math.abs(o.x - player.x); if (d < bd) { bd = d; best = o; } });
+  const id = pin || (best ? best.id : 'room:' + roomAt().s.id);
+  if (id !== nearId) { nearId = id; renderNear(); renderChips(); }
+  if (imgReady) draw(t);
+  requestAnimationFrame(loop);
+}
+const nearObj = () => objs.find(o => o.id === nearId);
+function walkTo(x) { player.face = null; player.tx = clamp(x, 20, worldW() - 20); player.sp = clamp(Math.abs(player.tx - player.x) / 1.5, 560, 1800); }
+const standAt = o => { const gap = o.type === 'gate' ? 96 : o.type === 'npc' ? 50 : 62; walkTo(o.x + (player.x <= o.x ? -gap : gap)); player.face = o.x; };
+
+// ---------- 左邊面板 ----------
+function taskLine(t, s) {
+  const pp = person(t.assignee), late = overdue(t), n = pending().filter(c => c.taskId === t.id).length, mine = sideOf(t) === 'internal', logs = (game.logs || []).filter(l => l.pid === pid && l.taskId === t.id).sort((a, b) => b.date.localeCompare(a.date));
+  return `<li><input type="checkbox" class="chk" data-done="${esc(t.id)}" ${undone(t) ? '' : 'checked'} title="完成了就打勾（會寫回工作台）"><div class="t">${esc(t.name)}${late ? '<span class="tag red">逾期</span>' : ''}${n ? `<span class="tag">已出 ${n} 張牌</span>` : ''}
+    <div class="muted">${pp ? esc(pp.name) : ''}${t.due ? ' · 期限 ' + md(t.due) : ' · 沒有期限'}${t.dueNote ? ' · ' + esc(t.dueNote) : ''}</div>
+    ${logs.slice(0, 2).map(l => `<div class="muted">↳ ${md(l.date)} ${esc(l.text)}</div>`).join('')}${logs.length > 2 ? `<div class="muted">↳ 還有 ${logs.length - 2} 筆較早的紀錄</div>` : ''}</div>
+    ${undone(t) ? `<div class="acts2"><button class="sm ${mine ? '' : 'hi'}" data-play="${esc(t.id)}" data-stage="${esc(s.id)}">出牌</button><span><button class="link" data-log="${esc(t.id)}">記進度</button><button class="link" data-move="${esc(t.id)}">改期</button></span></div>` : ''}</li>`;
+}
+const checkLine = (c, s) => `<li><input type="checkbox" class="chk" data-check="${esc(s.id)}|${esc(c.id)}" ${c.done ? 'checked' : ''} title="做完就打勾（會寫回工作台）"><div class="t">${esc(c.text)}${c.due ? `<span class="muted"> · ${md(c.due)}</span>` : ''}</div></li>`;
+function stageBlock(s) {
+  const g = gateInfo(s), ts = tasksIn(s), r = spanOf(s), late = ts.filter(overdue).length, theirs = ts.filter(t => undone(t) && sideOf(t) !== 'internal').length;
+  const grp = k => ts.filter(t => undone(t) && sideOf(t) === k).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
+  const sec = (title, arr) => arr.length ? `<h3>${title}（${arr.length}）</h3><ul class="list">${arr.slice(0, 5).map(t => taskLine(t, s)).join('')}${arr.length > 5 ? `<li class="muted">還有 ${arr.length - 5} 件，點任務板看全部</li>` : ''}</ul>` : '';
+  const missing = g.docs.filter(d => d.status !== 'confirmed'), ms = (proj().milestones || []).filter(m => isDate(m.date) && m.date >= r.a && m.date <= r.b);
+  return `<h2>${r.i + 1}. ${esc(s.name)}<span class="tag ${s.status === 'doing' ? 'amber' : s.status === 'done' ? 'green' : 'grey'}">${STAGE_STATUS[s.status] || esc(s.status)}</span></h2>
+    ${editStage === s.id ? `<form data-form="stage" data-stage="${esc(s.id)}" class="evform">
+      <label>階段名稱<input type="text" name="name" value="${esc(s.name)}" required></label>
+      <div class="row"><label>開始日<input type="date" name="enteredOn" value="${esc(s.enteredOn || '')}"></label><label>完成日（還沒完成就填預計）<input type="date" name="doneOn" value="${esc(s.doneOn || '')}"></label></div>
+      <label>過關條件<input type="text" name="exit" value="${esc(s.exit || '')}"></label>
+      <div><button class="sm hi">存起來</button> <button type="button" class="sm" data-edit-stage="">取消</button> <span class="muted">會寫回工作台</span></div></form>`
+    : `<p class="muted editable" data-edit-stage="${esc(s.id)}" title="點一下就可以改">${md(r.a)} ～ ${md(r.b)}${isDate(s.enteredOn) && isDate(s.doneOn) ? '' : '（有日期沒填，這是推估的）'}　過關條件：${esc(s.exit || '（沒寫）')}　<b>✎ 點這裡修改</b></p>`}
+    <div class="kpi"><div><b>${g.dOk}/${g.docs.length}</b>文件已確認</div><div><b>${ts.filter(undone).length}</b>件待辦</div><div><b>${theirs}</b>件球在對方</div><div><b>${late}</b>件逾期</div></div>`
+    + (ms.length ? `<h3>里程碑</h3><ul class="list">${ms.map(m => `<li><div class="t">${m.done ? '✓' : '★'} ${esc(m.name)}<span class="muted"> · ${md(m.date)}</span></div></li>`).join('')}</ul>` : '')
+    + (s.status === 'done' ? '<p class="muted">這一關已經過了。</p>' : ((missing.length ? `<h3>還缺的文件（${missing.length}）</h3><ul class="list">${missing.map(d => `<li><div class="t">${esc(d.name)}<div class="muted">${esc(person(d.owner)?.name || '')} · ${esc(DOC_STATUS[d.status] || d.status)}</div></div></li>`).join('')}</ul>` : '')
+      + sec('在等客戶', grp('client')) + sec('在等供應商', grp('vendor')) + sec('我方要做', grp('internal'))
+      + (!missing.length && !ts.some(undone) ? '<p class="muted">沒有在等的東西，可以回工作台完成這個階段。</p>' : '')));
+}
+function eventsBlock(s) {
+  const td = today(), evs = game.events.filter(e => e.pid === pid && e.stageId === s.id).map(e => Object.assign(e, { date: e.date || e.happenedOn || e.addedOn || td })).sort((a, b) => b.date.localeCompare(a.date));
+  return `<h2>事件簿：${esc(s.name)}</h2><p class="muted">記下這一關發生的事（或預計會發生的事）：哪一天、對後面有什麼影響。之後回頭看，就知道時程是怎麼變的。</p>
+    <form data-form="event" data-stage="${esc(s.id)}" class="evform">
+      <input type="text" name="text" placeholder="發生了什麼事？例：客戶窗口換人" required>
+      <div class="row"><label>哪一天<input type="date" name="date" value="${td}" required></label><label style="flex:2">對後面的影響<input type="text" name="impact" placeholder="例：設計確認會晚一週"></label></div>
+      <button class="sm hi">記下來</button></form>
+    <ul class="list">${evs.map(e => `<li><div class="t"><b>${md(e.date)}</b>　${esc(e.text)}<span class="tag ${e.date > td ? 'amber' : 'grey'}">${e.date > td ? '預計' : '已發生'}</span>${e.impact ? `<div class="muted">影響：${esc(e.impact)}</div>` : ''}</div><button class="sm" data-evdel="${e.id}" title="刪掉這一筆">刪除</button></li>`).join('') || '<li class="muted">還沒有紀錄。</li>'}</ul>`;
+}
+function renderNear() {
+  const o = nearObj(), s = o ? o.stage : roomAt().s, el = $('near'), ts = tasksIn(s); let h = '';
+  if (!o || o.type === 'sign') h = stageBlock(s);
+  else if (o.type === 'gate') {
+    const g = gateInfo(s), ok = s.status === 'done';
+    h = `<h2>過關目標：${esc(s.name)}</h2><p>${ok ? '這一關已經過了。' : '完成下面這些，這一關才算過。'}</p><p class="muted">過關條件：${esc(s.exit || '（沒寫）')}</p>
+      <h3>文件要全部確認（${g.dOk}/${g.docs.length}）</h3><ul class="list">${g.docs.map(d => `<li><div class="t">${d.status === 'confirmed' ? '✓' : '□'} ${esc(d.name)}<span class="muted"> · ${esc(DOC_STATUS[d.status] || d.status)}</span></div></li>`).join('') || '<li class="muted">沒有</li>'}</ul>
+      ${g.cl.length ? `<h3>要做的事（${g.cOk}/${g.cl.length}）</h3><ul class="list">${g.cl.map(c => checkLine(c, s)).join('')}</ul>` : ''}
+      <p class="muted">文件狀態和「完成這個階段」要回專案工作台改；待辦和要做的事可以直接在這裡打勾。</p>`;
+  } else if (o.type === 'board') {
+    const cl = s.checklist || [], open = ts.filter(undone).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
+    const doneTs = ts.filter(x => !undone(x));
+    h = `<h2>任務板：${esc(s.name)}</h2><p class="muted">這一關要完成的事都在這裡。<b>做完的事</b>在左邊打勾。<b>結果不確定、要等別人的事</b>按「出牌」：決定你要怎麼推，並猜一下結果。</p>
+      <h3>這一關要做的事（${cl.filter(c => c.done).length}/${cl.length}）</h3><ul class="list">${cl.map(c => checkLine(c, s)).join('') || '<li class="muted">沒有</li>'}</ul>
+      <h3>待交付項目（${open.length}）</h3><ul class="list">${open.map(t => taskLine(t, s)).join('') || '<li class="muted">都完成了</li>'}</ul>
+      ${doneTs.length ? `<details><summary class="muted">已完成 ${doneTs.length} 件（打勾錯了可以在這裡取消）</summary><ul class="list">${doneTs.map(t => taskLine(t, s)).join('')}</ul></details>` : ''}`;
+  } else if (o.type === 'npc') {
+    const pp = o.ref, mine = ts.filter(t => t.assignee === pp.id), res = game.cards.filter(c => c.pid === pid && c.personId === pp.id && c.result), cards = pending().filter(c => c.stageId === s.id && c.personId === pp.id);
+    const rate = res.length ? Math.round(res.reduce((a, c) => a + outcome(c), 0) / res.length * 100) + '%（' + res.length + ' 張）' : '還沒有紀錄';
+    h = `<h2>${esc(pp.name)}<span class="tag">${(SIDE[pp.side] || {}).label || ''}</span></h2><p class="muted">${esc(s.name)} · 你對這個對象的預測命中率：${rate}</p>
+      <ul class="list">${mine.filter(undone).map(t => taskLine(t, s)).join('') || '<li class="muted">這一關他沒有未完成的事</li>'}</ul>
+      ${cards.length ? `<h3>對他出過、還沒揭曉的牌</h3><ul class="list">${cards.map(cardLine).join('')}</ul>` : ''}
+      <p><button class="sm" data-play="" data-stage="${esc(s.id)}" data-person="${esc(pp.id)}">對他出一張不綁任務的牌</button></p>`;
+  } else if (o.type === 'event') h = eventsBlock(s);
+  else if (o.type === 'doc') {
+    const d = o.ref, ow = person(d.owner);
+    h = `<h2>文件：${esc(d.name)}</h2><p class="muted">${esc(s.name)}</p><p>狀態：<b>${esc(DOC_STATUS[d.status] || d.status)}</b>${d.confirmedOn ? '（' + md(d.confirmedOn) + ' 確認）' : ''}</p>
+      <p class="muted">${ow ? '負責：' + esc(ow.name) : ''}${d.kind ? ' · ' + esc(d.kind) : ''}</p>
+      <p>${linkOf(d) ? `<a href="${esc(linkOf(d))}" target="_blank" rel="noopener noreferrer">打開文件 ↗</a>` : '<span class="muted">還沒有連結。在工作台這份文件填上網址，這裡就會出現藍色箭頭、可以直接打開。</span>'}</p>
+      <p class="muted">${d.status === 'confirmed' ? '綠色＝這份已經拿到了。' : (d.status === 'review' || d.status === 'draft') ? '橘色＝還在草稿或送審中。' : '白色＝還沒開始，這一關還缺它。'}</p>`;
+  }
+  el.innerHTML = h;
+}
+
+// ---------- 右邊面板 ----------
+function stats(cards) { const r = cards.filter(c => c.result); return { n: cards.length, r: r.length, hit: r.length ? r.reduce((a, c) => a + outcome(c), 0) / r.length : null, cal: r.length ? r.reduce((a, c) => a + calib(c), 0) / r.length : null }; }
+const pct = v => v == null ? '–' : Math.round(v * 100) + '%';
+function cardLine(c) {
+  const due = c.revealOn <= today();
+  return `<li class="${due ? 'due' : ''}"><div class="t"><b>${esc(c.action)}</b> → ${esc(c.target)}<div class="muted">我猜：${esc(c.predict)} · ${c.conf}% 把握 · ${md(c.revealOn)} 揭曉</div></div>
+    <button class="sm ${due ? 'hi' : ''}" data-resolve="${c.id}">對答案</button></li>`;
+}
+function renderSide() {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  const el = $('side'), p = proj(), pend = pending(), ready = pend.filter(c => c.revealOn <= today());
+  if (tab === 'turn') {
+    const all = p.tasks.filter(undone), late = all.filter(overdue).sort((a, b) => a.due.localeCompare(b.due)), theirs = all.filter(t => sideOf(t) !== 'internal');
+    el.innerHTML = `<details class="help" ${game.cards.length ? '' : 'open'}><summary>這個遊戲怎麼玩</summary><ol>
+      <li><b>打勾</b>：自己做完的事、對方已經交來的東西，在清單左邊打勾就好，不用出牌。還沒完成但有進展，按「記進度」；要延後，按「改期」。</li>
+      <li><b>出牌</b>：結果不確定、要等別人的事才出牌。點地圖上的人或白板，對那件事按「出牌」，選你要怎麼推，寫下你猜會怎樣、幾成把握、哪天對答案。</li>
+      <li><b>對答案</b>：出過的牌會列在這個分頁的「待揭曉的牌」，每張右邊有「對答案」。到了那天按下去，選猜中、中一半或沒中，寫一句學到什麼。</li>
+      <li><b>看成長</b>：「打法統計」看哪種做法最常成功；「戰績」看你說的把握準不準。</li></ol></details>
+      <div class="kpi"><div><b>${ready.length}</b>張可以對答案</div><div><b>${pend.length}</b>張待揭曉</div><div><b>${theirs.length}</b>件球在對方</div><div><b>${late.length}</b>件逾期</div></div>
+      <h3>待揭曉的牌</h3><ul class="list">${pend.map(cardLine).join('') || '<li class="muted">現在沒有牌，所以還沒有東西可以對答案。<br>先點地圖上的人或白板，對一件事按「出牌」。打出去之後，那張牌會列在這裡，右邊就是「對答案」按鈕。</li>'}</ul>
+      ${late.length ? `<h3>逾期的事（可以考慮出牌）</h3><ul class="list">${late.slice(0, 6).map(t => `<li><div class="t">${esc(t.name)}<div class="muted">${esc(person(t.assignee)?.name || '')} · 期限 ${md(t.due)}</div></div><button class="sm" data-goto="${esc(t.id)}">走過去</button></li>`).join('')}</ul>` : ''}`;
+  } else if (tab === 'deck') {
+    const names = [...new Set([...ACTIONS, ...game.deck, ...game.cards.map(c => c.action)])];
+    const rows = names.map(a => ({ a, s: stats(game.cards.filter(c => c.action === a)) })).sort((x, y) => y.s.n - x.s.n);
+    const lessons = game.cards.filter(c => c.result && c.lesson).slice(-8).reverse();
+    el.innerHTML = `<p class="muted">「打法」就是你出牌時選的做法。這張表統計每種做法用過幾次、猜中的比例；用得多又常中的，就是你的拿手牌。</p>
+      <table><tr><th>牌</th><th>打過</th><th>已揭曉</th><th>命中率</th></tr>${rows.map(r => `<tr><td>${esc(r.a)}${game.deck.includes(r.a) ? '<span class="tag">自訂</span>' : ''}</td><td>${r.s.n}</td><td>${r.s.r}</td><td>${pct(r.s.hit)}</td></tr>`).join('')}</table>
+      <h3>最近學到的</h3><ul class="list">${lessons.map(c => `<li><div class="t">${esc(c.lesson)}<div class="muted">${esc(c.action)} → ${esc(c.target)}</div></div></li>`).join('') || '<li class="muted">對答案時寫下「學到什麼」，會收在這裡。</li>'}</ul>`;
+  } else {
+    const s = stats(game.cards), res = game.cards.filter(c => c.result);
+    const buckets = [[50, 60], [65, 75], [80, 95]].map(([lo, hi]) => { const b = res.filter(c => c.conf >= lo && c.conf <= hi); return { lo, hi, n: b.length, hit: b.length ? b.reduce((a, c) => a + outcome(c), 0) / b.length : null }; });
+    const ppl = p.people.map(pp => ({ pp, s: stats(game.cards.filter(c => c.pid === pid && c.personId === pp.id)) })).filter(x => x.s.n);
+    el.innerHTML = `<div class="kpi"><div><b>${s.n}</b>張牌</div><div><b>${s.r}</b>已揭曉</div><div><b>${pct(s.hit)}</b>命中率</div><div><b>${s.cal == null ? '–' : Math.round(s.cal * 100)}</b>掌握度</div></div>
+      <p class="muted">掌握度看的是「你說的把握」跟「實際結果」差多少。說九成把握卻猜錯會扣很多；說五成把握猜錯扣得少。越接近 100，代表你越知道自己知道什麼。</p>
+      <h3>你說的把握準不準</h3><table><tr><th>你說的把握</th><th>張數</th><th>實際命中</th></tr>${buckets.map(b => `<tr><td>${b.lo}～${b.hi}%</td><td>${b.n}</td><td>${pct(b.hit)}</td></tr>`).join('')}</table>
+      <h3>對每個對象的命中率（這個專案）</h3><table><tr><th>對象</th><th>張數</th><th>命中率</th></tr>${ppl.map(x => `<tr><td>${esc(x.pp.name)}</td><td>${x.s.n}</td><td>${pct(x.s.hit)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">還沒有紀錄</td></tr>'}</table>
+      <h3>揭曉紀錄</h3><ul class="list">${res.slice(-8).reverse().map(c => `<li><div class="t">${{ hit: '🎯 中', half: '◐ 一半', miss: '✗ 沒中' }[c.result]}　${esc(c.action)} → ${esc(c.target)}<div class="muted">猜：${esc(c.predict)}｜實際：${esc(c.actual || '')}</div></div></li>`).join('') || '<li class="muted">還沒有</li>'}</ul>`;
+  }
+}
+function renderHud() {
+  const s = stats(game.cards), lv = 1 + Math.floor(game.xp / 100);
+  $('lv').textContent = lv; $('xpbar').style.width = (game.xp % 100) + '%'; $('xptxt').textContent = `${game.xp % 100}/100`;
+  $('hit').textContent = pct(s.hit); $('cal').textContent = s.cal == null ? '–' : Math.round(s.cal * 100); $('pend').textContent = pending().length;
+}
+function renderChips() {
+  const here = roomAt()?.s.id;
+  $('chips').innerHTML = `<button class="hi" data-now>▶ 進行中<small style="color:#fff">走到現在這一關</small></button>` + spans.map(r => {
+    const s = r.s, w = waitParts(s), line = s.status === 'done' ? `已過關 · ${md(r.a)}～${md(r.b)}` : s.status === 'todo' ? `還沒到 · ${md(r.a)} 起` : (w.length ? '在等：' + w.join('、') : '可以過關了');
+    return `<button class="${esc(s.status)} ${s.id === here ? 'here' : ''}" data-room="${r.i}">${r.i + 1}. ${esc(s.name)}<small>${esc(line)}</small></button>`;
+  }).join('');
+}
+function renderAll() { renderHud(); renderChips(); renderNear(); renderSide(); }
+function refresh() { buildWorld(); renderAll(); }
+function toast(msg) { const d = document.createElement('div'); d.textContent = msg; $('toast').appendChild(d); setTimeout(() => d.remove(), 3000); }
+function gainXp(n, why) { const before = Math.floor(game.xp / 100); game.xp += n; toast(`${why}　+${n} XP`); if (Math.floor(game.xp / 100) > before) setTimeout(() => toast(`升級！Lv ${1 + Math.floor(game.xp / 100)}`), 500); }
+
+// ---------- 出牌與對答案 ----------
+function openCard({ stageId, taskId, personId }) {
+  const s = stageOf(stageId), t = taskId ? proj().tasks.find(x => x.id === taskId) : null, pp = person(personId || t?.assignee);
+  const target = t ? `${pp ? pp.name + '：' : ''}${t.name}` : (pp ? pp.name : s.name);
+  const acts = [...new Set([...ACTIONS, ...game.deck])];
+  $('modal').innerHTML = `<form class="card-form" data-form="card">
+    <h2>出一張牌</h2><div class="muted">${esc(s.name)} · 對象：${esc(target)}</div>
+    <label>我要打哪張牌</label><select name="action">${acts.map(a => `<option>${esc(a)}</option>`).join('')}<option value="__custom">自己寫一張…</option></select>
+    <input type="text" name="custom" placeholder="自訂的打法" hidden style="margin-top:6px">
+    <label>我猜會發生什麼（寫得出對錯的句子）</label><textarea name="predict" required placeholder="例：週四前會回，但只回一半的項目"></textarea>
+    <div class="row"><div><label>幾成把握：<b id="confv">70</b>%</label><input type="range" name="conf" min="50" max="95" step="5" value="70" style="width:100%"></div>
+    <div><label>哪一天對答案</label><input type="date" name="revealOn" value="${addDays(today(), 3)}" required></div></div>
+    <input type="hidden" name="stageId" value="${esc(stageId)}"><input type="hidden" name="taskId" value="${esc(taskId || '')}"><input type="hidden" name="personId" value="${esc(pp?.id || '')}"><input type="hidden" name="target" value="${esc(target)}">
+    <div class="acts"><button type="button" data-close>取消</button><button class="hi">打出去</button></div></form>`;
+  $('modal').hidden = false; $('modal').querySelector('textarea').focus();
+}
+function playCard(f) {
+  const action = f.action === '__custom' ? (f.custom || '').trim() : f.action;
+  if (!action || !f.predict.trim() || !isDate(f.revealOn)) return false;
+  if (f.action === '__custom' && !ACTIONS.includes(action) && !game.deck.includes(action)) game.deck.push(action);
+  game.cards.push({ id: uid(), pid, stageId: f.stageId, taskId: f.taskId || '', personId: f.personId || '', target: f.target, action, predict: f.predict.trim(), conf: +f.conf, playedOn: today(), revealOn: f.revealOn, result: '', actual: '', lesson: '' });
+  gainXp(5, '牌打出去了'); saveGame(); return true;
+}
+function openResolve(id) {
+  const c = game.cards.find(x => x.id === id); if (!c) return;
+  $('modal').innerHTML = `<form class="card-form" data-form="resolve">
+    <h2>對答案</h2><div class="muted">${md(c.playedOn)} 出牌 · ${md(c.revealOn)} 揭曉</div>
+    <div class="quote"><b>${esc(c.action)}</b> → ${esc(c.target)}<br>我猜：${esc(c.predict)}（${c.conf}% 把握）</div>
+    <label>結果</label><div class="seg">
+      <label><input type="radio" name="result" value="hit" required><span>🎯 猜中</span></label>
+      <label><input type="radio" name="result" value="half"><span>◐ 中一半</span></label>
+      <label><input type="radio" name="result" value="miss"><span>✗ 沒中</span></label></div>
+    <label>實際發生了什麼</label><textarea name="actual" placeholder="例：週五下午才回，全部項目都回了"></textarea>
+    <label>學到什麼（下次會怎麼打）</label><textarea name="lesson" placeholder="例：副本給主管對這位窗口有效，但他習慣壓線才回"></textarea>
+    <input type="hidden" name="id" value="${c.id}">
+    <div class="acts"><button type="button" data-close>取消</button><button class="hi">揭曉</button></div></form>`;
+  $('modal').hidden = false;
+}
+function resolveCard(f) {
+  const c = game.cards.find(x => x.id === f.id); if (!c || !f.result) return false;
+  Object.assign(c, { result: f.result, actual: (f.actual || '').trim(), lesson: (f.lesson || '').trim(), resolvedOn: today() });
+  gainXp(10 + Math.round(20 * calib(c)) + (c.lesson ? 5 : 0), { hit: '🎯 猜中', half: '◐ 中一半', miss: '✗ 沒中，但你知道為什麼了' }[c.result]); saveGame(); return true;
+}
+// 記進度：誰在哪一天做了什麼。只存在遊戲這邊（game.json），不會寫到工作台或 Notion。
+function openLog(taskId) {
+  const tk = proj().tasks.find(x => x.id === taskId); if (!tk) return;
+  $('modal').innerHTML = `<form class="card-form" data-form="log"><h2>記一筆進度</h2><div class="muted">${esc(person(tk.assignee)?.name || '')}：${esc(tk.name)}</div>
+    <label>哪一天</label><input type="date" name="date" value="${today()}" required>
+    <label>發生了什麼（對方做了什麼、回了什麼）</label><textarea name="text" required placeholder="例：回覆了三項意見，Logo 還沒給"></textarea>
+    <div class="muted" style="margin-top:6px">這筆只存在遊戲這邊，不會寫進工作台，也不會同步到 Notion。</div>
+    <input type="hidden" name="taskId" value="${esc(taskId)}"><div class="acts"><button type="button" data-close>取消</button><button class="hi">記下來</button></div></form>`;
+  $('modal').hidden = false; $('modal').querySelector('textarea').focus();
+}
+// 改期：會改工作台這件事的期限與「期限說明」。
+function openMove(taskId) {
+  const tk = proj().tasks.find(x => x.id === taskId); if (!tk) return; const s = proj().stages.find(x => tasksIn(x).includes(tk));
+  $('modal').innerHTML = `<form class="card-form" data-form="move"><h2>改期</h2><div class="muted">${esc(person(tk.assignee)?.name || '')}：${esc(tk.name)}　原本的期限：${tk.due ? md(tk.due) : '沒有'}</div>
+    <label>新的期限</label><input type="date" name="due" value="${tk.due && tk.due > today() ? tk.due : addDays(today(), 7)}" required>
+    <label>期限說明（會寫進工作台；這一欄會同步到 Notion 待交付表，請寫對外說得出口的版本）</label><input type="text" name="note" value="${esc(tk.due ? '原 ' + md(tk.due) + '，' : '')}" required placeholder="例：原 11/13，等客戶補資料後順延">
+    <label><input type="checkbox" name="ev" checked style="width:auto"> 同時記到這一關的事件簿</label>
+    <label>對後面的影響（只記在事件簿，不會寫到工作台）</label><input type="text" name="impact" placeholder="例：設計定稿跟著晚一週">
+    <input type="hidden" name="taskId" value="${esc(taskId)}"><input type="hidden" name="stageId" value="${esc(s?.id || '')}"><div class="acts"><button type="button" data-close>取消</button><button class="hi">改期</button></div></form>`;
+  $('modal').hidden = false;
+}
+async function moveTask(f) {
+  if (!isDate(f.due) || !f.note.trim()) return false; let name = '', old = '';
+  const ok = await writeBack(d => { const tk = d.projects.find(x => x.id === pid)?.tasks.find(x => x.id === f.taskId); if (!tk) return false; name = tk.name; old = tk.due || ''; tk.due = f.due; if (tk.dueStart && tk.dueStart > f.due) tk.dueStart = ''; tk.dueNote = f.note.trim(); return true; });
+  if (ok && f.ev) game.events.push({ id: uid(), pid, stageId: f.stageId, text: `「${name}」改期：${old ? md(old) : '沒有期限'} → ${md(f.due)}`, date: today(), impact: (f.impact || '').trim(), addedOn: today() });
+  if (ok) { saveGame(); toast(`已改到 ${md(f.due)}`); }
+  return ok;
+}
+const formData = form => Object.fromEntries(new FormData(form).entries());
+
+// ---------- 打勾：寫回工作台 ----------
+// 只改一筆。每次先讀工作台最新的檔案、改那一筆、留一份備份（work.backup.json）再寫回，不會蓋掉工作台那邊剛改的其他東西。
+// 示範資料沒有檔案，只改記憶體裡的。
+async function writeBack(change) {
+  if (!dir) { const ok = change(work); refresh(); return ok; }
+  try {
+    const read = async () => (await (await dir.getFileHandle('work.json')).getFile());
+    const before = await (await read()).text(), data = JSON.parse(before);
+    if (!change(data)) { toast('工作台裡找不到這一筆，可能剛被改過'); await pullIfChanged(); return false; }
+    const pr = data.projects.find(x => x.id === pid); if (pr) pr.updatedAt = new Date().toISOString();
+    const put = async (name, text) => { const h = await dir.getFileHandle(name, { create: true }), w = await h.createWritable(); await w.write(text); await w.close(); };
+    await put('work.backup.json', before); await put('work.json', JSON.stringify(data, null, 2));
+    work = data; workModified = (await read()).lastModified; refresh(); return true;
+  } catch (e) { toast('寫回工作台失敗：' + e.message); renderNear(); return false; }
+}
+async function saveStage(stageId, f) {
+  if (!f.name.trim()) return; if (isDate(f.enteredOn) && isDate(f.doneOn) && f.doneOn < f.enteredOn) return toast('完成日不能早於開始日');
+  const ok = await writeBack(d => { const s = d.projects.find(x => x.id === pid)?.stages.find(x => x.id === stageId); if (!s) return false; s.name = f.name.trim(); s.enteredOn = isDate(f.enteredOn) ? f.enteredOn : ''; s.doneOn = isDate(f.doneOn) ? f.doneOn : ''; s.exit = (f.exit || '').trim(); return true; });
+  if (ok) { editStage = ''; toast('已存到工作台'); renderAll(); }
+}
+async function toggleTask(id) {
+  let done = false;
+  const ok = await writeBack(d => { const tk = d.projects.find(x => x.id === pid)?.tasks.find(x => x.id === id); if (!tk) return false; tk.status = tk.status === 'done' ? 'todo' : 'done'; done = tk.status === 'done'; return true; });
+  if (ok && done) { gainXp(3, '完成一件事'); saveGame(); renderHud(); }
+}
+async function toggleCheck(stageId, checkId) {
+  let done = false;
+  const ok = await writeBack(d => { const c = d.projects.find(x => x.id === pid)?.stages.find(x => x.id === stageId)?.checklist?.find(x => x.id === checkId); if (!c) return false; c.done = !c.done; done = c.done; return true; });
+  if (ok && done) { gainXp(3, '完成一件事'); saveGame(); renderHud(); }
+}
+
+// ---------- 事件 ----------
+document.addEventListener('submit', e => {
+  e.preventDefault(); const kind = e.target.dataset.form, f = formData(e.target);
+  if (kind === 'card' && playCard(f)) { $('modal').hidden = true; tab = 'turn'; refresh(); }
+  if (kind === 'resolve' && resolveCard(f)) { $('modal').hidden = true; tab = 'stats'; refresh(); }
+  if (kind === 'log' && f.text.trim() && isDate(f.date)) { (game.logs = game.logs || []).push({ id: uid(), pid, taskId: f.taskId, date: f.date, text: f.text.trim() }); gainXp(2, '記下一筆進度'); saveGame(); $('modal').hidden = true; renderAll(); }
+  if (kind === 'stage') saveStage(e.target.dataset.stage, f);
+  if (kind === 'move') moveTask(f).then(ok => { if (ok) { $('modal').hidden = true; renderAll(); } });
+  if (kind === 'event' && f.text.trim()) { game.events.push({ id: uid(), pid, stageId: e.target.dataset.stage, text: f.text.trim(), date: isDate(f.date) ? f.date : today(), impact: (f.impact || '').trim(), addedOn: today() }); gainXp(5, '記下一件事'); saveGame(); renderAll(); }
+});
+document.addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit-stage]'); if (ed) { editStage = ed.dataset.editStage; renderNear(); return; }
+  const b = e.target.closest('button'); if (!b) { if (e.target.id === 'modal') $('modal').hidden = true; return; }
+  const d = b.dataset;
+  if ('close' in d) $('modal').hidden = true;
+  else if ('play' in d) openCard({ stageId: d.stage, taskId: d.play, personId: d.person });
+  else if (d.resolve) openResolve(d.resolve);
+  else if (d.log) openLog(d.log);
+  else if (d.move) openMove(d.move);
+  else if (d.evdel) { game.events = game.events.filter(x => x.id !== d.evdel); saveGame(); renderAll(); }
+  else if (d.tab) { tab = d.tab; renderSide(); }
+  else if ('now' in d) { pin = null; walkTo(nowX()); }
+  else if (d.room) { pin = null; walkTo(+d.room * ROOM_W + 150); }
+  else if (d.goto) { const tk = proj().tasks.find(x => x.id === d.goto), o = objs.find(q => q.type === 'npc' && q.ref.id === tk.assignee && tasksIn(q.stage).includes(tk)) || objs.find(q => q.type === 'board' && tasksIn(q.stage).includes(tk)); if (o) { pin = o.id; standAt(o); } }
+  else if (d.store === 'connect') connect();
+});
+document.addEventListener('change', e => {
+  if (e.target.name === 'action') e.target.form.custom.hidden = e.target.value !== '__custom';
+  if (e.target.id === 'proj') { pid = e.target.value; enterProject(); }
+  if (e.target.dataset.done) toggleTask(e.target.dataset.done);
+  if (e.target.dataset.check) toggleCheck(...e.target.dataset.check.split('|'));
+});
+document.addEventListener('input', e => { if (e.target.name === 'conf') $('confv').textContent = e.target.value; });
+addEventListener('keydown', e => { if (e.key === 'Escape') $('modal').hidden = true; });
+addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); });
+const worldX = e => e.clientX - cv.getBoundingClientRect().left + cam();
+const objAt = wx => { let best = null, bd = 34; objs.forEach(o => { const d = Math.abs(o.x - wx); if (d < bd) { bd = d; best = o; } }); return best; };
+cv.addEventListener('click', e => { const wx = worldX(e), o = objAt(wx); if (o) { pin = o.id; standAt(o); } else { pin = null; walkTo(wx); } });
+cv.addEventListener('mousemove', e => { const o = objAt(worldX(e)); hoverId = o ? o.id : null; });
+cv.addEventListener('mouseleave', () => { hoverId = null; });
+const hold = (el, k) => { el.addEventListener('pointerdown', () => keys[k] = true); ['pointerup', 'pointerleave', 'pointercancel'].forEach(n => el.addEventListener(n, () => keys[k] = false)); };
+hold($('goL'), 'left'); hold($('goR'), 'right');
+addEventListener('resize', resize);
+
+// ---------- 讀工作台資料（沿用工作台記住的資料夾授權） ----------
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('workbench-vault', 1); r.onupgradeneeded = () => r.result.createObjectStore('handles'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const getHandle = async () => { const db = await idb(); return new Promise((res, rej) => { const q = db.transaction('handles', 'readonly').objectStore('handles').get('dir'); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); };
+const setHandle = async h => { const db = await idb(); return new Promise((res, rej) => { const q = db.transaction('handles', 'readwrite').objectStore('handles').put(h, 'dir'); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); };
+async function readJson(h, name) { try { const f = await (await h.getFileHandle(name)).getFile(); const t = await f.text(); return { data: t.trim() ? JSON.parse(t) : null, modified: f.lastModified }; } catch (e) { if (e.name === 'NotFoundError') return { data: null, modified: 0 }; throw e; } }
+async function useDir(h) {
+  const w = await readJson(h, 'work.json');
+  if (!w.data?.projects?.length) return false;
+  dir = h; work = w.data; workModified = w.modified; isDemo = false;
+  const g = await readJson(h, 'game.json');
+  if (g.data && (g.data.updatedAt || '') >= (game.updatedAt || '')) { game = Object.assign(emptyGame(), g.data); try { localStorage.setItem(LS_KEY, JSON.stringify(game)); } catch (e) {} }
+  else if (game.cards.length || game.events.length) saveGame();
+  pid = null; enterProject(); return true;
+}
+// 記住的資料夾讀不到 work.json（例如資料夾搬過家）就請使用者重新選一次
+async function connect() {
+  if (!('showDirectoryPicker' in window)) return toast('請用 Chrome 開啟才能連結資料夾');
+  try {
+    let h = await getHandle(), ok = false;
+    if (h) { try { ok = (await h.requestPermission({ mode: 'readwrite' })) === 'granted' && await useDir(h); } catch (e) { ok = false; } }
+    if (!ok) { h = await showDirectoryPicker({ id: 'workbench-data', mode: 'readwrite' }); if (await useDir(h)) await setHandle(h); else toast('這個資料夾裡沒有 work.json，請選「專案工作區／data」'); }
+  } catch (e) { if (e.name !== 'AbortError') toast('連結失敗：' + e.message); }
+}
+async function boot() { try { const h = await getHandle(); if (h && (await h.queryPermission({ mode: 'readwrite' })) === 'granted') await useDir(h); } catch (e) {} }
+async function pullIfChanged() { if (!dir) return; try { const w = await readJson(dir, 'work.json'); if (w.data && w.modified > workModified) { work = w.data; workModified = w.modified; const x = player.x; enterProject(true); player.x = x; } } catch (e) {} }
+addEventListener('focus', pullIfChanged);
+
+const nowX = () => Math.max(0, spans.findIndex(r => r.s.status === 'doing')) * ROOM_W + 150;
+function enterProject(keepPos) {
+  if (!work.projects.some(p => p.id === pid)) pid = work.projects[0].id;
+  $('proj').innerHTML = work.projects.map(p => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  $('demo').hidden = !isDemo;
+  $('demo').innerHTML = '現在看到的是示範資料（虛構）。<button class="sm hi" data-store="connect">連結專案工作台的資料</button>　請選「專案工作區／data」資料夾；之後每次開啟按一下這顆即可。';
+  $('store').textContent = isDemo ? '' : '● 已連結工作台資料。打勾會寫回工作台；牌與事件存在 game.json';
+  buildWorld(); if (!keepPos) { player.x = nowX(); player.tx = null; }
+  pin = null; nearId = null; renderAll();
+}
+
+// ---------- 啟動 ----------
+resize(); enterProject(); requestAnimationFrame(loop);
+loadImages().then(() => document.fonts && document.fonts.load('11px "Cubic 11"')).catch(() => {}).then(() => { if (SELFTEST) selftest(); else boot(); });
+
+function selftest() {
+  const out = {};
+  try {
+    game = emptyGame(); refresh();
+    out.rooms = spans.length; out.themes = spans.map(r => themeOf(r.s)).join(',');
+    out.types = objs.reduce((a, o) => (a[o.type] = (a[o.type] || 0) + 1, a), {}); out.img = Object.values(IMG).every(i => (i.width || 0) > 0); out.art = ART;
+    const npc = objs.find(o => o.type === 'npc' && o.stage.status === 'doing' && o.ref.side !== 'internal'), tk = tasksIn(npc.stage).find(x => undone(x) && x.assignee === npc.ref.id);
+    playCard({ action: ACTIONS[0], predict: '測試預測', conf: '90', revealOn: today(), stageId: npc.stage.id, taskId: tk.id, personId: tk.assignee, target: 'x' });
+    playCard({ action: '__custom', custom: '自訂牌', predict: '第二張', conf: '60', revealOn: addDays(today(), 2), stageId: npc.stage.id, taskId: '', personId: tk.assignee, target: 'y' });
+    refresh(); out.pending = pending().length;
+    ['sign', 'doc', 'board', 'event', 'npc', 'gate'].forEach(k => { const o = objs.find(q => q.type === k && q.stage.id === npc.stage.id); nearId = o.id; renderNear(); out['p_' + k] = $('near').innerHTML.length; });
+    resolveCard({ id: game.cards[0].id, result: 'hit', actual: 'a', lesson: 'l' }); resolveCard({ id: game.cards[1].id, result: 'miss', actual: '', lesson: '' }); refresh();
+    const st = stats(game.cards); out.xp = game.xp; out.hit = st.hit; out.cal = +st.cal.toFixed(3);
+    ['turn', 'deck', 'stats'].forEach(k => { tab = k; renderSide(); out['tab_' + k] = $('side').innerHTML.length; });
+    out.evform = $('near').innerHTML.includes('evform') || (nearId = objs.find(q => q.type === 'event' && q.stage.id === npc.stage.id).id, renderNear(), $('near').innerHTML.includes('evform'));
+    tab = 'turn'; pin = npc.id; nearId = npc.id; player.x = npc.x - 150; renderAll(); draw(1000); out.ok = true;
+  } catch (e) { out.error = e.message + ' @ ' + (e.stack || '').split('\n')[1]; }
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  document.title = 'SELFTEST ' + JSON.stringify(out);
+}
+</script>
+</body>
+</html>
